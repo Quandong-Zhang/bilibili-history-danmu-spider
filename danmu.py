@@ -224,7 +224,7 @@ if __name__ == '__main__':
     for day_danmu in danmu_list:
         try:
             for danmu in day_danmu:
-                # 弹幕id入库防止重复
+                # 重复是弹幕的精髓
                 if 0==0:
                     danmu_id_list.append(danmu.id)
                     # 每条弹幕

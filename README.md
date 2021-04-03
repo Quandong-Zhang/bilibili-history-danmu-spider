@@ -28,7 +28,5 @@
 
 <span class="hljs-comment">;https代理，与SESSDATA同理用英文逗号隔开，可以为空</span>
 <span class="hljs-attr">proxy</span>=</code></pre>
-<p>以下爬取是2021-01-01到2021-01-10 av114514全弹幕效果
-<img src="https://s3.ax1x.com/2021/02/11/yBLTn1.png" alt="效果">  </p>
 <h2>想要爬别的视频弹幕？</h2>
 <p><strong><em>把代码中cid改成对应视频的cid即可。</em></strong></p>

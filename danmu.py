@@ -5,12 +5,20 @@ import random
 import time
 import logging
 import configparser
-import xml.etree.ElementTree as ET
-
 import requests
-
 import bilidm_pb2
 
+
+def realtime(timeStamp):
+    timeArray = time.localtime(timeStamp)
+    otherStyleTime = time.strftime("%Y-%m-%d %H:%M:%S", timeArray)
+    return otherStyleTime
+
+def writecsv(a,b,c,d,e):
+    file = open("danmaku.csv","a",encoding="utf-8")
+    file.write(str(a)+","+str(b)+","+str(c)+","+str(d)+","+str(e))
+    file.write("\n")
+    file.close()
 
 # 返回开始到结束年中的所有月数组，例如['2011-01', '2011-02', '2011-03', '2011-04', '2011-05', '2011-06', '2011-07', '2011-08', '2011-09', '2011-10', '2011-11', '2011-12', '2012-01', '2012-02', '2012-03', '2012-04', '2012-05', '2012-06', '2012-07', '2012-08', '2012-09', '2012-10', '2012-11', '2012-12']
 def list_months(start, end):
@@ -155,7 +163,7 @@ def show_error(message):
     logging.error(message)
 
 
-def main(cid,start_year,end_year,SESSDATA,daily,https_proxy):
+def main(cid,start_year,end_year,SESSDATA,daily,https_proxy,danmu_id_list):
     # 配置已经移动到danmu.ini
     # av114514 1P的cid 190524
     #cid = 190524
@@ -189,22 +197,13 @@ def main(cid,start_year,end_year,SESSDATA,daily,https_proxy):
         danmu_list.append(history_danmu)
 
     # 日后跟踪用
-    logging.debug(str(danmu_list))
+    #logging.debug(str(danmu_list))
     # 发现有重复弹幕，于是拿来了这个。。
-    danmu_id_list = []
+    #danmu_id_list = []
 
     # 把一大堆弹幕数据放进对应列表，输出xml
     # xml根对象i
-    show_info('开始输出xml格式弹幕文件...')
-    danmu_xml_root = ET.Element('i')
-    # 大多数子对象值都是固定的
-    ET.SubElement(danmu_xml_root, 'chatserver').text = 'chat.bilibili.com'
-    ET.SubElement(danmu_xml_root, 'chatid').text = f'{cid}'
-    ET.SubElement(danmu_xml_root, 'mission').text = '0'
-    ET.SubElement(danmu_xml_root, 'maxlimit').text = '100000000000'
-    ET.SubElement(danmu_xml_root, 'state').text = '0'
-    ET.SubElement(danmu_xml_root, 'real_name').text = '0'
-    ET.SubElement(danmu_xml_root, 'source').text = 'k-v'
+    show_info('开始输出csv格式弹幕文件...')
     for day_danmu in danmu_list:
         try:
             for danmu in day_danmu:
@@ -213,24 +212,18 @@ def main(cid,start_year,end_year,SESSDATA,daily,https_proxy):
                     danmu_id_list.append(danmu.id)
                     # 每条弹幕
                     content = danmu.content
+                    ret=realtime(danmu.ctime)
+                    realuid=danmu.midHash
+                    writecsv(ret, realuid, content, danmu.idStr, int(danmu.progress)/1000)
                     # 踩坑：处理完发现播放器里面一条弹幕都木有，查文档发现xml弹幕和protobuf弹幕出现时间这个参数不一样，xml是秒，protobuf是毫秒。
-                    ET.SubElement(danmu_xml_root, 'd', {
-                                  'p': f'{int(danmu.progress)/1000},{danmu.mode},{danmu.fontsize},{danmu.color},{danmu.ctime},{danmu.pool},{danmu.midHash},{danmu.idStr}'}).text = content
+                    #ET.SubElement(danmu_xml_root, 'd', {
+                    #              'p': f'{int(danmu.progress)/1000},{danmu.mode},{danmu.fontsize},{danmu.color},{danmu.ctime},{danmu.pool},{danmu.midHash},{danmu.idStr}'}).text = content
                     show_info('输出弹幕'+content)
                 else:
                     print(f'api输出了重复弹幕：{danmu.content}')
         except:
             show_error('输出文件中出问题！！可能少一些弹幕。')
-
-    # 保存弹幕
-    try:
-        result_danmu_xml = ET.ElementTree(danmu_xml_root)
-        result_danmu_xml.write(f'{cid}-{start_year}-{end_year}.xml', 'UTF-8')
-        show_info(
-            f'保存xml弹幕成功! {cid}-{start_year}-{end_year}.xml ,输出了{len(danmu_id_list)}条弹幕。')
-    except:
-        show_error('保存xml弹幕失败。')
-
+    return danmu_id_list
 
 if __name__ == '__main__':
     config = configparser.RawConfigParser()
@@ -250,9 +243,10 @@ if __name__ == '__main__':
         show_error('兄啊你的配置文件有、问题啊！')
         exit(code=1)
     
-
+    danmu_id_list=[]
     while start_year<=end_year:
-        main(cid, start_year, start_year, SESSDATA, daily, https_proxy)
+        danmu_id_list=main(cid, start_year, start_year, SESSDATA, daily, https_proxy,danmu_id_list)
         start_year+=1
         show_info("执行成功"+str(start_year))
     show_info("完毕"+str(time.time()))
+    show_info(str(len(danmu_id_list)))

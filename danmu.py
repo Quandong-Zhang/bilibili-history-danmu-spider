@@ -155,7 +155,7 @@ def show_error(message):
     logging.error(message)
 
 
-if __name__ == '__main__':
+def main(cid,start_year,end_year,SESSDATA,daily,https_proxy):
     # 配置已经移动到danmu.ini
     # av114514 1P的cid 190524
     #cid = 190524
@@ -171,22 +171,6 @@ if __name__ == '__main__':
     #https_proxy = []
 
     # 代码开始
-    config = configparser.RawConfigParser()
-    try:
-        config.read('danmu.ini', encoding='utf-8')
-        SESSDATA = str(config.items('account')[0][1]).split(',')
-        cid = int(config.items('spider')[0][1])
-        start_year = int(config.items('spider')[1][1])
-        end_year = int(config.items('spider')[2][1])
-        daily = int(config.items('spider')[3][1])
-        #如果没有代理就变个空的
-        if config.items('spider')[4][1] != '':
-            https_proxy = str(config.items('spider')[4][1]).split(',')
-        else:
-            https_proxy = []
-    except:
-        show_error('兄啊你的配置文件有、问题啊！')
-        exit(code=1)
     # 记录日志
     logging.basicConfig(filename='getDanmu.log', level=logging.INFO)
     months = list_months(start_year, end_year)
@@ -224,8 +208,8 @@ if __name__ == '__main__':
     for day_danmu in danmu_list:
         try:
             for danmu in day_danmu:
-                # 重复是弹幕的精髓
-                if 0==0:
+                # 弹幕id入库防止重复
+                if danmu.id not in danmu_id_list:
                     danmu_id_list.append(danmu.id)
                     # 每条弹幕
                     content = danmu.content
@@ -234,7 +218,7 @@ if __name__ == '__main__':
                                   'p': f'{int(danmu.progress)/1000},{danmu.mode},{danmu.fontsize},{danmu.color},{danmu.ctime},{danmu.pool},{danmu.midHash},{danmu.idStr}'}).text = content
                     show_info('输出弹幕'+content)
                 else:
-                    show_info(f'api输出了重复弹幕：{danmu.content}')
+                    print(f'api输出了重复弹幕：{danmu.content}')
         except:
             show_error('输出文件中出问题！！可能少一些弹幕。')
 
@@ -248,5 +232,27 @@ if __name__ == '__main__':
         show_error('保存xml弹幕失败。')
 
 
-# else:
-    #show_info('这是Plan B? (雾)')
+if __name__ == '__main__':
+    config = configparser.RawConfigParser()
+    try:
+        config.read('danmu.ini', encoding='utf-8')
+        SESSDATA = str(config.items('account')[0][1]).split(',')
+        cid = int(config.items('spider')[0][1])
+        start_year = int(config.items('spider')[1][1])
+        end_year = int(config.items('spider')[2][1])
+        daily = int(config.items('spider')[3][1])
+        #如果没有代理就变个空的
+        if config.items('spider')[4][1] != '':
+            https_proxy = str(config.items('spider')[4][1]).split(',')
+        else:
+            https_proxy = []
+    except:
+        show_error('兄啊你的配置文件有、问题啊！')
+        exit(code=1)
+    
+
+    while start_year<=end_year:
+        main(cid, start_year, start_year, SESSDATA, daily, https_proxy)
+        start_year+=1
+        show_info("执行成功"+str(start_year))
+    show_info("完毕"+str(time.time()))
